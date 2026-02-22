@@ -1,3 +1,4 @@
+// src/components/main.jsx
 import React from "react";
 
 const Home = () => {
@@ -13,11 +14,10 @@ const Home = () => {
           />
           <div className="card-img-overlay d-flex align-items-center">
             <div className="container">
-              <h5 className="card-title fs-1 text fw-lighter">New Season Arrivals</h5>
+              <h5 className="card-title fs-1 text fw-lighter">Bienvenue chez Kay Dieund</h5>
               <p className="card-text fs-5 d-none d-sm-block ">
-                This is a wider card with supporting text below as a natural
-                lead-in to additional content. This content is a little bit
-                longer.
+                Découvrez notre sélection de produits de qualité. 
+                Des articles soigneusement choisis pour répondre à tous vos besoins.
               </p>
             </div>
           </div>

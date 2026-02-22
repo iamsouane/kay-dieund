@@ -1,3 +1,4 @@
+// src/components/Products.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { addCart } from "../redux/action";
@@ -79,31 +80,31 @@ const Products = () => {
             className="btn btn-outline-dark btn-sm m-2"
             onClick={() => setFilter(data)}
           >
-            All
+            Tout
           </button>
           <button
             className="btn btn-outline-dark btn-sm m-2"
             onClick={() => filterProduct("men's clothing")}
           >
-            Men's Clothing
+            Vêtement pour homme
           </button>
           <button
             className="btn btn-outline-dark btn-sm m-2"
             onClick={() => filterProduct("women's clothing")}
           >
-            Women's Clothing
+            Vêtement pour femme
           </button>
           <button
             className="btn btn-outline-dark btn-sm m-2"
             onClick={() => filterProduct("jewelery")}
           >
-            Jewelery
+            Bijoux
           </button>
           <button
             className="btn btn-outline-dark btn-sm m-2"
             onClick={() => filterProduct("electronics")}
           >
-            Electronics
+            Electroniques
           </button>
         </div>
 
@@ -139,7 +140,7 @@ const Products = () => {
                     to={"/product/" + product.id}
                     className="btn btn-dark m-1"
                   >
-                    Buy Now
+                    Acheter maintenant
                   </Link>
                   <button
                     className="btn btn-dark m-1"
@@ -148,7 +149,7 @@ const Products = () => {
                       addProduct(product);
                     }}
                   >
-                    Add to Cart
+                    Ajouter au panier
                   </button>
                 </div>
               </div>
@@ -163,7 +164,7 @@ const Products = () => {
       <div className="container my-3 py-3">
         <div className="row">
           <div className="col-12">
-            <h2 className="display-5 text-center">Latest Products</h2>
+            <h2 className="display-5 text-center">Derniers Produits</h2>
             <hr />
           </div>
         </div>
