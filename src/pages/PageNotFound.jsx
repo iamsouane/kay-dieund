@@ -1,23 +1,53 @@
+// src/pages/PageNotFound.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { Navbar } from "../components";
+import { Navbar, Footer } from "../components";
+import { Home, ArrowLeft } from "lucide-react";
 
 const PageNotFound = () => {
   return (
     <>
       <Navbar />
-      <div className="container my-3 py-3">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-12 py-5 bg-light text-center">
-              <h4 className="p-3 display-5">404: Page Not Found</h4>
-              <Link to="/" className="btn  btn-outline-dark mx-4">
-                <i className="fa fa-arrow-left"></i> Go Back to Home
-              </Link>
+      
+      <div className="container my-5 py-5">
+        <div className="row justify-content-center">
+          <div className="col-md-8 col-lg-6 text-center">
+            <div className="py-5">
+              {/* Code 404 */}
+              <h1 className="display-1 fw-bold text-primary mb-4">404</h1>
+              
+              {/* Titre */}
+              <h2 className="display-5 fw-bold mb-4">Page non trouvée</h2>
+              
+              {/* Message */}
+              <p className="lead text-muted mb-5">
+                Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
+              </p>
+              
+              {/* Boutons */}
+              <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <Link 
+                  to="/" 
+                  className="btn btn-primary btn-lg rounded-pill px-5 d-inline-flex align-items-center gap-2"
+                >
+                  <Home size={20} />
+                  Accueil
+                </Link>
+                
+                <button 
+                  onClick={() => window.history.back()} 
+                  className="btn btn-outline-secondary btn-lg rounded-pill px-5 d-inline-flex align-items-center gap-2"
+                >
+                  <ArrowLeft size={20} />
+                  Retour
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <Footer />
     </>
   );
 };
