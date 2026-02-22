@@ -3,7 +3,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { addCart, delCart } from "../redux/action";
 import toast from "react-hot-toast";
-import { Plus, Minus, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Minus, AlertTriangle } from "lucide-react";
 
 const CartItemControls = ({ product }) => {
   const dispatch = useDispatch();

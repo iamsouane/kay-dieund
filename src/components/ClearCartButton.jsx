@@ -3,7 +3,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { delCart } from "../redux/action";
 import toast from "react-hot-toast";
-import { Trash2, AlertTriangle, X } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
 
 const ClearCartButton = ({ cartItems }) => {
     const dispatch = useDispatch();
