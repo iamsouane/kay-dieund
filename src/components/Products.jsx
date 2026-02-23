@@ -26,6 +26,16 @@ import useFetchProducts from "../hooks/useFetchProducts";
 import useProductFilters from "../hooks/useProductFilters";
 import AddToCartButton from "./AddToCartButton";
 
+// Fonction de formatage des prix en FCFA
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('fr-SN', {
+    style: 'currency',
+    currency: 'XOF',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
+
 const Products = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   
@@ -43,10 +53,11 @@ const Products = () => {
     setSortBy,
   } = useProductFilters(products);
 
+  // Catégories avec slugs correspondant à Django
   const categories = [
     { id: "all", name: "Tous les produits", icon: Grid3x3 },
-    { id: "men's clothing", name: "Homme", icon: Shirt },
-    { id: "women's clothing", name: "Femme", icon: Shirt },
+    { id: "men-s-clothing", name: "Homme", icon: Shirt },
+    { id: "women-s-clothing", name: "Femme", icon: Shirt },
     { id: "jewelery", name: "Bijoux", icon: Gem },
     { id: "electronics", name: "Électronique", icon: Laptop },
   ];
@@ -190,16 +201,11 @@ const Products = () => {
                   {/* Badge de catégorie */}
                   <div className="position-absolute top-0 start-0 m-3 z-1">
                     <span className="badge bg-primary bg-opacity-75 text-white px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
-                      {product.category === "men's clothing" && <Shirt size={14} />}
-                      {product.category === "women's clothing" && <Shirt size={14} />}
-                      {product.category === "jewelery" && <Gem size={14} />}
-                      {product.category === "electronics" && <Laptop size={14} />}
-                      <span className="ms-1">
-                        {product.category === "men's clothing" && "Homme"}
-                        {product.category === "women's clothing" && "Femme"}
-                        {product.category === "jewelery" && "Bijoux"}
-                        {product.category === "electronics" && "Électronique"}
-                      </span>
+                      {product.category_name === "Vêtements Homme" && <Shirt size={14} />}
+                      {product.category_name === "Vêtements Femme" && <Shirt size={14} />}
+                      {product.category_name === "Bijoux" && <Gem size={14} />}
+                      {product.category_name === "Électronique" && <Laptop size={14} />}
+                      <span className="ms-1">{product.category_name}</span>
                     </span>
                   </div>
 
@@ -207,7 +213,7 @@ const Products = () => {
                   <div className="product-image-wrapper p-4">
                     <img
                       className="card-img-top product-image"
-                      src={product.image}
+                      src={product.image_url || product.image}
                       alt={product.title}
                       style={{ height: "200px", objectFit: "contain" }}
                     />
@@ -230,14 +236,14 @@ const Products = () => {
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <div>
                         <span className="h4 fw-bold text-primary">
-                          {product.price.toLocaleString()} €
+                          {formatPrice(product.price)}
                         </span>
                       </div>
                       <div className="d-flex align-items-center">
                         <div className="text-warning d-flex me-1">
-                          {renderStars(product.rating?.rate)}
+                          {renderStars(product.rating_rate)}
                         </div>
-                        <span className="text-muted small">(45)</span>
+                        <span className="text-muted small">({product.rating_count})</span>
                       </div>
                     </div>
 

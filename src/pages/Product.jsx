@@ -8,10 +8,21 @@ import { useDispatch } from "react-redux";
 import { addCart } from "../redux/action";
 import { Footer, Navbar } from "../components";
 import toast from "react-hot-toast";
+import { getProduct, getProductsByCategory } from "../services/api";
+
+// Fonction de formatage des prix en FCFA
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('fr-SN', {
+    style: 'currency',
+    currency: 'XOF',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
 
 const Product = () => {
   const { id } = useParams();
-  const [product, setProduct] = useState([]);
+  const [product, setProduct] = useState(null);
   const [similarProducts, setSimilarProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loading2, setLoading2] = useState(false);
@@ -33,22 +44,23 @@ const Product = () => {
   };
 
   useEffect(() => {
-    const getProduct = async () => {
+    const fetchProduct = async () => {
       setLoading(true);
       setLoading2(true);
       try {
-        const response = await fetch(`https://fakestoreapi.com/products/${id}`);
-        const data = await response.json();
-        setProduct(data);
-        setSelectedImage(data.image);
+        // Récupérer le produit depuis l'API Django
+        const response = await getProduct(id);
+        const productData = response.data;
+        setProduct(productData);
+        setSelectedImage(productData.image_url || productData.image);
         setLoading(false);
         
-        const response2 = await fetch(
-          `https://fakestoreapi.com/products/category/${data.category}`
-        );
-        const data2 = await response2.json();
+        // Récupérer les produits similaires (même catégorie)
+        const similarResponse = await getProductsByCategory(productData.category);
         // Filtrer pour exclure le produit actuel
-        const filtered = data2.filter(item => item.id !== parseInt(id));
+        const filtered = similarResponse.data.results.filter(
+          item => item.id !== parseInt(id)
+        );
         setSimilarProducts(filtered);
         setLoading2(false);
       } catch (error) {
@@ -58,7 +70,10 @@ const Product = () => {
         setLoading2(false);
       }
     };
-    getProduct();
+    
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
   const incrementQuantity = () => {
@@ -94,6 +109,8 @@ const Product = () => {
   };
 
   const ShowProduct = () => {
+    if (!product) return null;
+    
     return (
       <div className="container my-5 py-4">
         <div className="row g-5">
@@ -103,28 +120,27 @@ const Product = () => {
               <div className="main-image bg-light rounded-4 p-4 mb-3 text-center">
                 <img
                   className="img-fluid"
-                  src={selectedImage || product.image}
+                  src={selectedImage || product.image_url}
                   alt={product.title}
                   style={{ maxHeight: "400px", objectFit: "contain" }}
                 />
               </div>
-              <div className="thumbnail-images d-flex gap-2 justify-content-center">
-                {[product.image, product.image, product.image].map((img, index) => (
+              {product.image_url && (
+                <div className="thumbnail-images d-flex gap-2 justify-content-center">
                   <div 
-                    key={index}
-                    className={`thumbnail bg-light rounded-3 p-2 cursor-pointer ${selectedImage === img ? 'border border-primary' : ''}`}
-                    onClick={() => setSelectedImage(img)}
+                    className={`thumbnail bg-light rounded-3 p-2 cursor-pointer ${selectedImage === product.image_url ? 'border border-primary' : ''}`}
+                    onClick={() => setSelectedImage(product.image_url)}
                     style={{ width: "80px", height: "80px", cursor: "pointer" }}
                   >
                     <img 
-                      src={img} 
-                      alt={`thumbnail-${index}`}
+                      src={product.image_url} 
+                      alt="thumbnail"
                       className="w-100 h-100"
                       style={{ objectFit: "contain" }}
                     />
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -134,10 +150,10 @@ const Product = () => {
               {/* Catégorie */}
               <div className="mb-3">
                 <span className="badge bg-primary bg-opacity-10 text-primary py-2 px-3 rounded-pill">
-                  {product.category === "men's clothing" && "👔 Vêtements Homme"}
-                  {product.category === "women's clothing" && "👗 Vêtements Femme"}
-                  {product.category === "jewelery" && "💎 Bijoux"}
-                  {product.category === "electronics" && "📱 Électronique"}
+                  {product.category_name === "Vêtements Homme" && "👔 Vêtements Homme"}
+                  {product.category_name === "Vêtements Femme" && "👗 Vêtements Femme"}
+                  {product.category_name === "Bijoux" && "💎 Bijoux"}
+                  {product.category_name === "Électronique" && "📱 Électronique"}
                 </span>
               </div>
 
@@ -148,18 +164,21 @@ const Product = () => {
               <div className="rating mb-3 d-flex align-items-center">
                 <div className="stars text-warning me-3">
                   {[...Array(5)].map((_, i) => (
-                    <i key={i} className={`fa fa-star${i < Math.round(product.rating?.rate) ? '' : '-o'}`}></i>
+                    <i 
+                      key={i} 
+                      className={`fa fa-star${i < Math.round(product.rating_rate) ? '' : i < Math.round(product.rating_rate) ? '' : '-o'}`}
+                    ></i>
                   ))}
                 </div>
                 <span className="text-muted">
-                  {product.rating?.rate} ({product.rating?.count} avis)
+                  {product.rating_rate} ({product.rating_count} avis)
                 </span>
               </div>
 
               {/* Prix */}
               <div className="price mb-4">
                 <h2 className="display-4 fw-bold text-primary">
-                  {product.price?.toLocaleString()} €
+                  {formatPrice(product.price)}
                 </h2>
                 <small className="text-muted">TVA incluse, livraison gratuite</small>
               </div>
@@ -189,7 +208,7 @@ const Product = () => {
                   >
                     <i className="fa fa-plus"></i>
                   </button>
-                  <span className="ms-3 text-muted">Stock disponible</span>
+                  <span className="ms-3 text-muted">Stock: {product.stock} disponibles</span>
                 </div>
               </div>
 
@@ -198,9 +217,10 @@ const Product = () => {
                 <button
                   className="btn btn-primary btn-lg flex-grow-1 rounded-pill"
                   onClick={() => addProduct(product)}
+                  disabled={product.stock < 1}
                 >
                   <i className="fa fa-shopping-cart me-2"></i>
-                  Ajouter au panier
+                  {product.stock < 1 ? "Rupture de stock" : "Ajouter au panier"}
                 </button>
                 <Link
                   to="/cart"
@@ -219,7 +239,7 @@ const Product = () => {
                       <i className="fa fa-truck text-primary me-3 fa-lg"></i>
                       <div>
                         <h6 className="fw-bold mb-0">Livraison gratuite</h6>
-                        <small className="text-muted">À partir de 50€</small>
+                        <small className="text-muted">À partir de 50 000 FCFA</small>
                       </div>
                     </div>
                   </div>
@@ -289,25 +309,26 @@ const Product = () => {
             <div className="text-center mb-3">
               <img
                 className="img-fluid"
-                src={item.image}
+                src={item.image_url || item.image}
                 alt={item.title}
                 style={{ height: "150px", objectFit: "contain" }}
               />
             </div>
             <div className="product-info">
               <h6 className="fw-bold mb-2">
-                {item.title.substring(0, 30)}...
+                {item.title.length > 30 ? `${item.title.substring(0, 30)}...` : item.title}
               </h6>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="h5 fw-bold text-primary">
-                  {item.price?.toLocaleString()} €
+                  {formatPrice(item.price)}
                 </span>
                 <div className="text-warning small">
-                  <i className="fa fa-star"></i>
-                  <i className="fa fa-star"></i>
-                  <i className="fa fa-star"></i>
-                  <i className="fa fa-star"></i>
-                  <i className="fa fa-star-half-alt"></i>
+                  {[...Array(5)].map((_, i) => (
+                    <i 
+                      key={i} 
+                      className={`fa fa-star${i < Math.round(item.rating_rate) ? '' : '-o'}`}
+                    ></i>
+                  ))}
                 </div>
               </div>
               <div className="d-flex gap-2">
@@ -321,9 +342,10 @@ const Product = () => {
                 <button
                   className="btn btn-primary btn-sm flex-grow-1 rounded-pill"
                   onClick={() => addProduct(item)}
+                  disabled={item.stock < 1}
                 >
                   <i className="fa fa-cart-plus me-1"></i>
-                  Ajouter
+                  {item.stock < 1 ? "Stock épuisé" : "Ajouter"}
                 </button>
               </div>
             </div>
@@ -349,7 +371,7 @@ const Product = () => {
                 <Link to="/product" className="text-decoration-none">Produits</Link>
               </li>
               <li className="breadcrumb-item active" aria-current="page">
-                {product.title?.substring(0, 30)}...
+                {product?.title?.substring(0, 30) || "Chargement..."}
               </li>
             </ol>
           </nav>
