@@ -1,21 +1,96 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 
 const Navbar = () => {
     const state = useSelector(state => state.handleCart)
     const [isOpen, setIsOpen] = useState(false)
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const [user, setUser] = useState(null)
+    const [dropdownOpen, setDropdownOpen] = useState(false)
     const location = useLocation()
+    const navigate = useNavigate()
+
+    // Vérifier l'état de connexion au chargement et quand le localStorage change
+    useEffect(() => {
+        const checkAuth = () => {
+            const token = localStorage.getItem('access')
+            const userData = localStorage.getItem('user')
+            
+            if (token && userData) {
+                setIsAuthenticated(true)
+                setUser(JSON.parse(userData))
+            } else {
+                setIsAuthenticated(false)
+                setUser(null)
+            }
+        }
+        
+        checkAuth()
+        
+        // Écouter les changements de localStorage (si un autre onglet modifie)
+        window.addEventListener('storage', checkAuth)
+        
+        return () => {
+            window.removeEventListener('storage', checkAuth)
+        }
+    }, [location]) // Re-vérifie quand la route change
 
     // Fonction pour fermer le menu après clic sur mobile
     const closeMenu = () => {
         setIsOpen(false)
+        setDropdownOpen(false)
     }
 
     // Fonction pour basculer le menu
     const toggleMenu = () => {
         setIsOpen(!isOpen)
+        if (dropdownOpen) setDropdownOpen(false)
+    }
+
+    // Fonction pour basculer le dropdown
+    const toggleDropdown = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setDropdownOpen(!dropdownOpen)
+    }
+
+    // Fermer le dropdown quand on clique ailleurs
+    useEffect(() => {
+        const handleClickOutside = () => {
+            if (dropdownOpen) {
+                setDropdownOpen(false)
+            }
+        }
+        document.addEventListener('click', handleClickOutside)
+        return () => {
+            document.removeEventListener('click', handleClickOutside)
+        }
+    }, [dropdownOpen])
+
+    // Fonction de déconnexion
+    const handleLogout = () => {
+        // Supprimer les tokens et infos user
+        localStorage.removeItem('access')
+        localStorage.removeItem('refresh')
+        localStorage.removeItem('user')
+        localStorage.removeItem('isAuthenticated')
+        
+        setIsAuthenticated(false)
+        setUser(null)
+        setDropdownOpen(false)
+        
+        toast.success("Déconnexion réussie")
+        navigate('/')
+        closeMenu()
+    }
+
+    // Récupérer le nom d'affichage de l'utilisateur
+    const getDisplayName = () => {
+        if (!user) return 'Mon Compte'
+        return user.full_name || user.username || user.email || 'Mon Compte'
     }
 
     return (
@@ -105,8 +180,8 @@ const Navbar = () => {
                         </div>
 
                         {/* Boutons utilisateur */}
-                        <div className="d-flex gap-2">
-                            {!localStorage.getItem('token') ? (
+                        <div className="d-flex gap-2 position-relative">
+                            {!isAuthenticated ? (
                                 <>
                                     <NavLink
                                         to="/login"
@@ -126,33 +201,70 @@ const Navbar = () => {
                                     </NavLink>
                                 </>
                             ) : (
-                                <div className="dropdown">
+                                <div className="dropdown d-inline-block">
                                     <button
-                                        className="btn btn-outline-dark rounded-pill dropdown-toggle"
+                                        className="btn btn-outline-dark rounded-pill dropdown-toggle d-flex align-items-center gap-2"
                                         type="button"
-                                        data-bs-toggle="dropdown"
+                                        onClick={toggleDropdown}
+                                        aria-expanded={dropdownOpen}
                                     >
-                                        <i className="fa fa-user me-2"></i>
-                                        Mon Compte
+                                        <i className="fa fa-user-circle"></i>
+                                        <span className="d-none d-md-inline">{getDisplayName()}</span>
                                     </button>
-                                    <ul className="dropdown-menu dropdown-menu-end">
-                                        <li>
-                                            <NavLink className="dropdown-item" to="/profile">
-                                                <i className="fa fa-user-circle me-2"></i>Profil
-                                            </NavLink>
-                                        </li>
-                                        <li>
-                                            <NavLink className="dropdown-item" to="/orders">
-                                                <i className="fa fa-shopping-bag me-2"></i>Commandes
-                                            </NavLink>
-                                        </li>
-                                        <li><hr className="dropdown-divider" /></li>
-                                        <li>
-                                            <button className="dropdown-item text-danger">
-                                                <i className="fa fa-sign-out-alt me-2"></i>Déconnexion
-                                            </button>
-                                        </li>
-                                    </ul>
+                                    
+                                    {/* Menu déroulant */}
+                                    {dropdownOpen && (
+                                        <ul className="dropdown-menu show position-absolute" style={{
+                                            top: '100%',
+                                            right: 0,
+                                            left: 'auto',
+                                            marginTop: '0.5rem',
+                                            minWidth: '200px',
+                                            boxShadow: '0 0.5rem 1rem rgba(0,0,0,0.15)',
+                                            zIndex: 1000
+                                        }}>
+                                            <li>
+                                                <NavLink 
+                                                    className="dropdown-item py-2" 
+                                                    to="/profile" 
+                                                    onClick={closeMenu}
+                                                >
+                                                    <i className="fa fa-user-circle me-2"></i>
+                                                    Mon Profil
+                                                </NavLink>
+                                            </li>
+                                            <li>
+                                                <NavLink 
+                                                    className="dropdown-item py-2" 
+                                                    to="/orders" 
+                                                    onClick={closeMenu}
+                                                >
+                                                    <i className="fa fa-shopping-bag me-2"></i>
+                                                    Mes Commandes
+                                                </NavLink>
+                                            </li>
+                                            <li>
+                                                <NavLink 
+                                                    className="dropdown-item py-2" 
+                                                    to="/settings" 
+                                                    onClick={closeMenu}
+                                                >
+                                                    <i className="fa fa-cog me-2"></i>
+                                                    Paramètres
+                                                </NavLink>
+                                            </li>
+                                            <li><hr className="dropdown-divider" /></li>
+                                            <li>
+                                                <button 
+                                                    className="dropdown-item text-danger py-2" 
+                                                    onClick={handleLogout}
+                                                >
+                                                    <i className="fa fa-sign-out-alt me-2"></i>
+                                                    Déconnexion
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    )}
                                 </div>
                             )}
 
@@ -175,7 +287,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* Ajout du style pour les liens actifs */}
+            {/* Ajout du style pour les liens actifs et le dropdown */}
             <style jsx>{`
                 .nav-link.active {
                     position: relative;
@@ -191,12 +303,43 @@ const Navbar = () => {
                     border-radius: 50%;
                     background-color: #0d6efd;
                 }
+                .dropdown-menu.show {
+                    display: block;
+                    animation: fadeIn 0.2s ease;
+                }
+                .dropdown-item {
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .dropdown-item:hover {
+                    background-color: #f8f9fa;
+                    transform: translateX(5px);
+                }
+                .dropdown-item.text-danger:hover {
+                    background-color: #dc3545;
+                    color: white !important;
+                }
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
                 @media (max-width: 991px) {
                     .nav-link.active::after {
                         bottom: auto;
                         top: 50%;
                         left: 10px;
                         transform: translateY(-50%);
+                    }
+                    .dropdown-menu.show {
+                        position: static !important;
+                        box-shadow: none !important;
+                        margin-top: 0.5rem;
                     }
                 }
             `}</style>

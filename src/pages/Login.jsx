@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Footer, Navbar } from "../components";
 import toast from "react-hot-toast";
+import { login } from '../services/api'; // IMPORT AJOUTÉ
 
 const Login = () => {
   const navigate = useNavigate();
@@ -31,47 +32,74 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.email.trim()) {
       newErrors.email = "L'email est requis";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email invalide";
     }
-    
+
     if (!formData.password.trim()) {
       newErrors.password = "Le mot de passe est requis";
     } else if (formData.password.length < 6) {
       newErrors.password = "Le mot de passe doit contenir au moins 6 caractères";
     }
-    
+
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast.error("Veuillez corriger les erreurs du formulaire");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
-    // Simuler la connexion
-    setTimeout(() => {
-      // Vérification des identifiants (simulée)
-      if (formData.email === "demo@kaydieund.sn" && formData.password === "password123") {
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("user", JSON.stringify({ email: formData.email, name: "Utilisateur Test" }));
-        toast.success("Connexion réussie !");
-        navigate("/");
+
+    try {
+      // Appel à l'API réelle au lieu de la simulation
+      const response = await login(formData);
+
+      // Stocke les tokens et infos user
+      localStorage.setItem('access', response.data.access);
+      localStorage.setItem('refresh', response.data.refresh);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      toast.success("Connexion réussie !");
+      navigate("/");
+    } catch (error) {
+      console.error("Erreur de connexion:", error);
+
+      // Gestion des erreurs Django
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Django peut renvoyer une erreur avec 'detail' ou d'autres champs
+        if (errorData.detail) {
+          toast.error(errorData.detail);
+        } else if (typeof errorData === 'object') {
+          const errorMessages = Object.values(errorData).flat().join(', ');
+          toast.error(errorMessages || "Email ou mot de passe incorrect");
+
+          // Met à jour les erreurs par champ si nécessaire
+          const fieldErrors = {};
+          if (errorData.username) fieldErrors.email = errorData.username[0];
+          if (errorData.password) fieldErrors.password = errorData.password[0];
+          setErrors(fieldErrors);
+        } else {
+          toast.error(String(errorData) || "Email ou mot de passe incorrect");
+        }
+      } else if (error.request) {
+        toast.error("Impossible de contacter le serveur. Vérifiez que le backend est lancé.");
       } else {
-        toast.error("Email ou mot de passe incorrect");
-        setIsSubmitting(false);
+        toast.error("Une erreur est survenue");
       }
-    }, 1500);
+      setIsSubmitting(false);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -81,7 +109,7 @@ const Login = () => {
   return (
     <>
       <Navbar />
-      
+
       <div className="login-page py-5">
         <div className="container">
           <div className="row justify-content-center align-items-center min-vh-80">
@@ -99,7 +127,7 @@ const Login = () => {
                         <p className="lead mb-4 opacity-75">
                           Connectez-vous pour accéder à votre compte
                         </p>
-                        
+
                         {/* Caractéristiques */}
                         <div className="features mt-5">
                           <div className="feature-item d-flex align-items-center mb-3">

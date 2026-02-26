@@ -27,21 +27,21 @@ export const getProduct = (id) => {
 
 // Récupérer les produits par catégorie
 export const getProductsByCategory = (categoryId, page = 1) => {
-  return api.get('/products/', { 
-    params: { 
+  return api.get('/products/', {
+    params: {
       category: categoryId,
-      page: page 
-    } 
+      page: page
+    }
   });
 };
 
 // Rechercher des produits
 export const searchProducts = (query, page = 1) => {
-  return api.get('/products/', { 
-    params: { 
+  return api.get('/products/', {
+    params: {
       search: query,
-      page: page 
-    } 
+      page: page
+    }
   });
 };
 
@@ -115,5 +115,44 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * AUTHENTIFICATION
+ */
+
+// Inscription
+export const register = (userData) => {
+  // Transforme fullName en first_name + last_name pour Django
+  const nameParts = userData.fullName.trim().split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  return api.post('/register/', {
+    username: userData.email, // ou tu peux utiliser email comme username
+    email: userData.email,
+    password: userData.password,
+    password2: userData.confirmPassword,
+    first_name: firstName,
+    last_name: lastName
+  });
+};
+
+// Connexion
+export const login = (credentials) => {
+  return api.post('/login/', {
+    username: credentials.email, // Django attend 'username' par défaut
+    password: credentials.password
+  });
+};
+
+// Rafraîchir le token
+export const refreshToken = (refresh) => {
+  return api.post('/token/refresh/', { refresh });
+};
+
+// Récupérer le profil
+export const getProfile = () => {
+  return api.get('/profile/');
+};
 
 export default api;

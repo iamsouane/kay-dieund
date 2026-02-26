@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Footer, Navbar } from "../components";
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { register } from '../services/api'; // IMPORT AJOUTÉ
 
 const Register = () => {
     const navigate = useNavigate();
@@ -35,19 +36,19 @@ const Register = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        
+
         if (!formData.fullName.trim()) {
             newErrors.fullName = "Le nom complet est requis";
         } else if (formData.fullName.trim().length < 3) {
             newErrors.fullName = "Le nom doit contenir au moins 3 caractères";
         }
-        
+
         if (!formData.email.trim()) {
             newErrors.email = "L'email est requis";
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = "Email invalide";
         }
-        
+
         if (!formData.password) {
             newErrors.password = "Le mot de passe est requis";
         } else if (formData.password.length < 6) {
@@ -55,46 +56,73 @@ const Register = () => {
         } else if (!/(?=.*[0-9])/.test(formData.password)) {
             newErrors.password = "Le mot de passe doit contenir au moins un chiffre";
         }
-        
+
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
         }
-        
+
         if (!formData.acceptTerms) {
             newErrors.acceptTerms = "Vous devez accepter les conditions d'utilisation";
         }
-        
+
         return newErrors;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const newErrors = validateForm();
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             toast.error("Veuillez corriger les erreurs du formulaire");
             return;
         }
-        
+
         setIsSubmitting(true);
-        
-        // Simuler l'inscription
-        setTimeout(() => {
-            // Vérification si l'email existe déjà (simulée)
-            if (formData.email === "demo@kaydieund.sn") {
-                toast.error("Cet email est déjà utilisé");
-                setIsSubmitting(false);
+
+        try {
+            // Appel à l'API réelle au lieu de la simulation
+            const response = await register(formData);
+
+            // Stocke les tokens et infos user
+            localStorage.setItem('access', response.data.access);
+            localStorage.setItem('refresh', response.data.refresh);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            toast.success("Inscription réussie !");
+            navigate("/");
+        } catch (error) {
+            console.error("Erreur d'inscription:", error);
+
+            // Gestion des erreurs Django
+            if (error.response?.data) {
+                // Django peut renvoyer différentes structures d'erreur
+                const errorData = error.response.data;
+
+                // Si c'est un objet avec des champs
+                if (typeof errorData === 'object') {
+                    const errorMessages = Object.values(errorData).flat().join(', ');
+                    toast.error(errorMessages || "Erreur lors de l'inscription");
+
+                    // Met à jour les erreurs par champ si nécessaire
+                    const fieldErrors = {};
+                    Object.keys(errorData).forEach(key => {
+                        if (key === 'username') fieldErrors.email = errorData[key][0];
+                        if (key === 'password') fieldErrors.password = errorData[key][0];
+                        if (key === 'email') fieldErrors.email = errorData[key][0];
+                    });
+                    setErrors(fieldErrors);
+                } else {
+                    // Si c'est une chaîne ou autre
+                    toast.error(String(errorData) || "Erreur lors de l'inscription");
+                }
+            } else if (error.request) {
+                toast.error("Impossible de contacter le serveur. Vérifiez que le backend est lancé.");
             } else {
-                localStorage.setItem("isAuthenticated", "true");
-                localStorage.setItem("user", JSON.stringify({ 
-                    email: formData.email, 
-                    name: formData.fullName 
-                }));
-                toast.success("Inscription réussie !");
-                navigate("/");
+                toast.error("Une erreur est survenue");
             }
-        }, 1500);
+            setIsSubmitting(false);
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -108,7 +136,7 @@ const Register = () => {
     return (
         <>
             <Navbar />
-            
+
             <div className="register-page py-5">
                 <div className="container">
                     <div className="row justify-content-center align-items-center min-vh-80">
@@ -126,7 +154,7 @@ const Register = () => {
                                                 <p className="lead mb-4 opacity-75">
                                                     Créez votre compte pour commencer vos achats
                                                 </p>
-                                                
+
                                                 {/* Avantages */}
                                                 <div className="benefits mt-5">
                                                     <div className="benefit-item d-flex align-items-center mb-3">
